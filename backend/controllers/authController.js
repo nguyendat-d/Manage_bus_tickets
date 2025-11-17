@@ -164,10 +164,23 @@ const authController = {
         { expiresIn: '1h' }
       );
 
+      // Kiểm tra xem email service có sẵn sàng không
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('📧 Email service not configured - returning token directly');
+        return res.json({
+          success: true,
+          message: 'Password reset token generated (email service not configured)',
+          data: {
+            resetToken: resetToken,
+            note: 'Use this token with the reset password API'
+          }
+        });
+      }
+
       // Gửi email reset password
       const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
       
-      await sendEmail({
+      const emailSent = await sendEmail({
         to: email,
         subject: 'Reset Your Password - Bus Ticket System',
         html: `
@@ -178,13 +191,27 @@ const authController = {
             Reset Password
           </a>
           <p>This link will expire in 1 hour.</p>
+          <p>If you didn't request this, please ignore this email.</p>
         `
       });
 
-      res.json({
-        success: true,
-        message: 'Password reset link sent to your email'
-      });
+      if (emailSent) {
+        res.json({
+          success: true,
+          message: 'Password reset link sent to your email'
+        });
+      } else {
+        // Nếu gửi email thất bại, trả về token trực tiếp
+        console.log('📧 Email sending failed - returning token directly');
+        res.json({
+          success: true,
+          message: 'Password reset token generated (email sending failed)',
+          data: {
+            resetToken: resetToken,
+            note: 'Use this token with the reset password API'
+          }
+        });
+      }
     } catch (error) {
       console.error('Forgot password error:', error);
       res.status(500).json({
@@ -198,6 +225,21 @@ const authController = {
   resetPassword: async (req, res) => {
     try {
       const { token, newPassword } = req.body;
+
+      // Validate input
+      if (!token || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Token and new password are required'
+        });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters long'
+        });
+      }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
       
@@ -213,10 +255,17 @@ const authController = {
       const password_hash = await bcrypt.hash(newPassword, saltRounds);
 
       // Cập nhật password
-      await pool.execute(
-        'UPDATE users SET password_hash = ? WHERE id = ?',
+      const [result] = await pool.execute(
+        'UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
         [password_hash, decoded.userId]
       );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
 
       res.json({
         success: true,
@@ -224,9 +273,24 @@ const authController = {
       });
     } catch (error) {
       console.error('Reset password error:', error);
+      
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid reset token'
+        });
+      }
+      
+      if (error.name === 'TokenExpiredError') {
+        return res.status(400).json({
+          success: false,
+          message: 'Reset token has expired'
+        });
+      }
+
       res.status(500).json({
         success: false,
-        message: 'Invalid or expired reset token'
+        message: 'Internal server error'
       });
     }
   },
@@ -238,6 +302,79 @@ const authController = {
       success: true,
       message: 'Logout successful'
     });
+  },
+
+  // Verify token (cho client-side checking)
+  verifyToken: async (req, res) => {
+    try {
+      const token = req.header('Authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return res.status(401).json({
+          success: false,
+          message: 'No token provided'
+        });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      
+      // Lấy thông tin user từ database
+      const [users] = await pool.execute(
+        'SELECT id, email, full_name, phone, avatar_url, role, status FROM users WHERE id = ?',
+        [decoded.userId]
+      );
+
+      if (users.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      const user = users[0];
+
+      if (user.status !== 'active') {
+        return res.status(401).json({
+          success: false,
+          message: 'Account is suspended'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          user: {
+            id: user.id,
+            email: user.email,
+            full_name: user.full_name,
+            phone: user.phone,
+            avatar_url: user.avatar_url,
+            role: user.role
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Verify token error:', error);
+      
+      if (error.name === 'JsonWebTokenError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid token'
+        });
+      }
+      
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({
+          success: false,
+          message: 'Token has expired'
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
   }
 };
 

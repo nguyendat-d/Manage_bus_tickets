@@ -1,8 +1,12 @@
+// utils/emailService.js
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Tạo transporter
-const transporter = nodemailer.createTransporter({
+console.log('EMAIL SERVICE - USER:', process.env.SMTP_USER ? '***' : 'NOT SET');
+console.log('EMAIL SERVICE - PASS:', process.env.SMTP_PASS ? '***' : 'NOT SET');
+
+// Tạo transporter - SỬA createTransporter THÀNH createTransport
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: process.env.SMTP_PORT || 587,
   secure: false,
@@ -12,19 +16,37 @@ const transporter = nodemailer.createTransporter({
   }
 });
 
+// Kiểm tra kết nối email (chỉ trong development)
+if (process.env.NODE_ENV === 'development') {
+  transporter.verify(function(error, success) {
+    if (error) {
+      console.log('❌ Email configuration error:', error.message);
+      console.log('💡 Email service will be disabled');
+    } else {
+      console.log('✅ Email server is ready to send messages');
+    }
+  });
+}
+
 const emailService = {
   // Gửi email
   sendEmail: async (emailOptions) => {
+    // Nếu không cấu hình email, bỏ qua
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      console.log('📧 Email service disabled - no SMTP configuration');
+      return true; // Trả về true để không break ứng dụng
+    }
+
     try {
       const info = await transporter.sendMail({
         from: `"Bus Ticket System" <${process.env.SMTP_USER}>`,
         ...emailOptions
       });
 
-      console.log('Email sent:', info.messageId);
+      console.log('📧 Email sent:', info.messageId);
       return true;
     } catch (error) {
-      console.error('Email sending error:', error);
+      console.error('❌ Email sending error:', error.message);
       return false;
     }
   },
@@ -130,6 +152,35 @@ const emailService = {
           </div>
 
           <p>Please prepare for the trip accordingly.</p>
+          
+          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+          <p style="color: #666; font-size: 12px;">
+            This is an automated message. Please do not reply to this email.
+          </p>
+        </div>
+      `
+    };
+
+    return await emailService.sendEmail(emailContent);
+  },
+
+  // Gửi email reset password
+  sendPasswordReset: async (user, resetToken) => {
+    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+    
+    const emailContent = {
+      to: user.email,
+      subject: 'Reset Your Password - Bus Ticket System',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Password Reset Request</h2>
+          <p>Hello ${user.full_name},</p>
+          <p>You requested to reset your password. Click the link below:</p>
+          <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 0;">
+            Reset Password
+          </a>
+          <p>This link will expire in 1 hour.</p>
+          <p>If you didn't request this, please ignore this email.</p>
           
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
           <p style="color: #666; font-size: 12px;">

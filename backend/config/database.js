@@ -1,5 +1,7 @@
 // config/database.js
+require('dotenv').config();
 const mysql = require('mysql2/promise');
+
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -9,11 +11,13 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  // XÓA các options không hợp lệ
+  // acquireTimeout: 60000,
+  // timeout: 60000,
+  // reconnect: true
 });
-
+console.log("USER:", process.env.DB_USER);
+console.log("PASS:", process.env.DB_PASSWORD);
 // Test connection
 pool.getConnection()
   .then(connection => {
@@ -24,5 +28,6 @@ pool.getConnection()
     console.error('❌ Database connection failed:', err.message);
     process.exit(1);
   });
+
 
 module.exports = pool;
