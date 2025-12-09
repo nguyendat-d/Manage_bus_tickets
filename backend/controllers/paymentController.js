@@ -165,8 +165,8 @@ const paymentController = {
          JOIN bookings b ON p.booking_id = b.id
          WHERE b.user_id = ?
          ORDER BY p.created_at DESC
-         LIMIT ? OFFSET ?`,
-        [user_id, limit, offset]
+         LIMIT ${parseInt(limit)} OFFSET ${offset}`,
+        [user_id]
       );
 
       const [countRows] = await pool.execute(

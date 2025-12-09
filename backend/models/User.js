@@ -65,8 +65,7 @@ class User {
       params.push(role);
     }
 
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    query += ` ORDER BY created_at DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
     const [rows] = await pool.execute(query, params);
     

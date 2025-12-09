@@ -29,8 +29,7 @@ class Route {
       params.push(filters.status);
     }
 
-    query += ' ORDER BY departure_city, arrival_city LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+    query += ` ORDER BY departure_city, arrival_city LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
     const [rows] = await pool.execute(query, params);
 
@@ -109,8 +108,7 @@ class Route {
        WHERE b.payment_status = 'paid'
        GROUP BY r.id
        ORDER BY booking_count DESC
-       LIMIT ?`,
-      [limit]
+       LIMIT ${parseInt(limit)}`
     );
     return rows;
   }

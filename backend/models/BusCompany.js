@@ -70,8 +70,7 @@ class BusCompany {
       params.push(status);
     }
 
-    query += ' ORDER BY bc.created_at DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    query += ` ORDER BY bc.created_at DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
     const [rows] = await pool.execute(query, params);
 

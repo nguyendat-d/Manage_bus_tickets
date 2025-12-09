@@ -25,8 +25,8 @@ class Bus {
        WHERE b.bus_company_id = ?
        GROUP BY b.id
        ORDER BY b.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [busCompanyId, limit, offset]
+       LIMIT ${parseInt(limit)} OFFSET ${offset}`,
+      [busCompanyId]
     );
 
     const [countRows] = await pool.execute(

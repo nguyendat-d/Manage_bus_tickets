@@ -8,6 +8,14 @@ const tripController = {
     try {
       const { from, to, date, page = 1, limit = 10 } = req.query;
       
+      // Validate required params
+      if (!from || !to || !date) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required parameters: from, to, date'
+        });
+      }
+
       const offset = (page - 1) * limit;
 
       let query = `
@@ -16,9 +24,8 @@ const tripController = {
           r.departure_city, r.departure_station,
           r.arrival_city, r.arrival_station,
           r.distance_km, r.estimated_duration_minutes,
-          bc.company_name,
-          b.bus_type, b.amenities, b.total_seats,
-          (SELECT AVG(rating) FROM reviews WHERE bus_company_id = bc.id) as company_rating
+          bc.company_name, bc.rating as company_rating,
+          b.bus_type, b.amenities, b.total_seats
         FROM trips t
         JOIN routes r ON t.route_id = r.id
         JOIN bus_companies bc ON t.bus_company_id = bc.id
@@ -40,8 +47,6 @@ const tripController = {
         AND bc.status = 'approved'
       `;
 
-      const params = [`%${from}%`, `%${to}%`, date];
-
       // Thêm sorting
       const sortBy = req.query.sortBy || 'departure_time';
       const sortOrder = req.query.sortOrder || 'ASC';
@@ -51,12 +56,21 @@ const tripController = {
         query += ` ORDER BY ${sortBy} ${sortOrder.toUpperCase()}`;
       }
 
-      // Thêm pagination
-      query += ` LIMIT ? OFFSET ?`;
-      params.push(parseInt(limit), offset);
+      // Thêm pagination - LIMIT và OFFSET phải là literal numbers, không dùng placeholder
+      query += ` LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
-      const [trips] = await pool.execute(query, params);
-      const [countResult] = await pool.execute(countQuery, params.slice(0, 3));
+      // Prepare params for main query (3 params only - không có limit/offset)
+      const queryParams = [
+        `%${from}%`, 
+        `%${to}%`, 
+        date
+      ];
+
+      // Prepare params for count query (3 params)
+      const countParams = [`%${from}%`, `%${to}%`, date];
+
+      const [trips] = await pool.execute(query, queryParams);
+      const [countResult] = await pool.execute(countQuery, countParams);
       const total = countResult[0].total;
 
       res.json({
@@ -153,28 +167,60 @@ const tripController = {
         [id]
       );
 
-      const bookedSeatNumbers = bookedSeats.flatMap(booking => 
-        JSON.parse(booking.seat_numbers)
-      );
+      let bookedSeatNumbers = [];
+      try {
+        bookedSeatNumbers = bookedSeats.flatMap(booking => {
+          const seats = booking.seat_numbers;
+          return Array.isArray(seats) ? seats : JSON.parse(seats);
+        });
+      } catch (e) {
+        console.error('Error parsing booked seats:', e.message);
+        bookedSeatNumbers = [];
+      }
 
       const trip = trips[0];
-      const seatMap = JSON.parse(trip.seat_map);
+      let seatMap = [];
+      
+      try {
+        seatMap = typeof trip.seat_map === 'string' ? JSON.parse(trip.seat_map) : trip.seat_map;
+      } catch (e) {
+        // If seat_map is not valid JSON, create a simple seat map
+        seatMap = Array.from({length: trip.total_seats}, (_, i) => ({
+          number: `A${i+1}`,
+          type: 'standard',
+          available: true
+        }));
+      }
 
       // Đánh dấu ghế đã đặt
-      const seatsWithStatus = seatMap.map(seat => ({
-        ...seat,
-        isAvailable: !bookedSeatNumbers.includes(seat.number),
-        isSelected: false
-      }));
+      const seatsWithStatus = seatMap.map(row => {
+        if (row.row && row.seats) {
+          // Format có row và seats
+          return {
+            ...row,
+            seats: row.seats.map(seat => ({
+              ...seat,
+              available: !bookedSeatNumbers.includes(seat.number)
+            }))
+          };
+        } else {
+          // Format đơn giản
+          return {
+            ...row,
+            available: !bookedSeatNumbers.includes(row.number)
+          };
+        }
+      });
 
       res.json({
         success: true,
         data: {
-          tripId: trip.id,
-          companyName: trip.company_name,
-          totalSeats: trip.total_seats,
-          availableSeats: trip.available_seats,
-          seats: seatsWithStatus
+          trip_id: trip.id,
+          company_name: trip.company_name,
+          total_seats: trip.total_seats,
+          available_seats: trip.available_seats,
+          booked_seats: bookedSeatNumbers,
+          seat_map: seatsWithStatus
         }
       });
     } catch (error) {

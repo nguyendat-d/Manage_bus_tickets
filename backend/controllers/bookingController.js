@@ -77,11 +77,17 @@ const bookingController = {
       );
 
       // Tạo QR Code
-      const qrCodeUrl = await generateQRCode(booking_code);
-      await connection.execute(
-        'UPDATE bookings SET qr_code_url = ? WHERE id = ?',
-        [qrCodeUrl, bookingResult.insertId]
-      );
+      let qrCodeUrl = null;
+      try {
+        qrCodeUrl = await generateQRCode(booking_code);
+        await connection.execute(
+          'UPDATE bookings SET qr_code_url = ? WHERE id = ?',
+          [qrCodeUrl, bookingResult.insertId]
+        );
+      } catch (qrError) {
+        console.error('QR Code generation failed:', qrError.message);
+        // Continue without QR code - it's not critical
+      }
 
       await connection.commit();
 
@@ -146,8 +152,7 @@ const bookingController = {
         countParams.push(status);
       }
 
-      query += ' ORDER BY b.created_at DESC LIMIT ? OFFSET ?';
-      params.push(parseInt(limit), offset);
+      query += ` ORDER BY b.created_at DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
       const [bookings] = await pool.execute(query, params);
       const [countResult] = await pool.execute(countQuery, countParams);

@@ -6,8 +6,8 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: bookingdb
-      MYSQL_USER: appuser
+      MYSQL_DATABASE: bus_ticket_management
+      MYSQL_USER: root
       MYSQL_PASSWORD: thanhdat12345
     ports:
       - "3306:3306"
@@ -38,7 +38,7 @@ services:
     env_file:
       - ./.env
     ports:
-      - "3000:3000"
+      - "5000:5000"
     depends_on:
       db:
         condition: service_healthy

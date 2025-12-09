@@ -1,3 +1,17 @@
+// Thêm POPULAR_ROUTES
+export const POPULAR_ROUTES = [
+  { from: 'Hà Nội', to: 'Hải Phòng' },
+  { from: 'Hà Nội', to: 'Đà Nẵng' },
+  { from: 'Hà Nội', to: 'Nha Trang' },
+  { from: 'Hồ Chí Minh', to: 'Đà Lạt' },
+  { from: 'Hồ Chí Minh', to: 'Vũng Tàu' },
+  { from: 'Đà Nẵng', to: 'Hội An' },
+  { from: 'Hà Nội', to: 'Hạ Long' },
+  { from: 'Hồ Chí Minh', to: 'Nha Trang' },
+  { from: 'Hà Nội', to: 'Sapa' },
+  { from: 'Hồ Chí Minh', to: 'Phú Quốc' }
+]
+
 export const APP_CONSTANTS = {
   ROLES: {
     PASSENGER: 'passenger',
@@ -50,4 +64,12 @@ export const STORAGE_KEYS = {
   TOKEN: 'token',
   USER: 'user',
   SEARCH_HISTORY: 'search_history'
+}
+
+// Export mặc định
+export default {
+  POPULAR_ROUTES,
+  APP_CONSTANTS,
+  CITIES,
+  STORAGE_KEYS
 }

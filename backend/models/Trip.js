@@ -108,8 +108,8 @@ class Trip {
        WHERE t.bus_company_id = ?
        GROUP BY t.id
        ORDER BY t.departure_time DESC
-       LIMIT ? OFFSET ?`,
-      [busCompanyId, limit, offset]
+       LIMIT ${parseInt(limit)} OFFSET ${offset}`,
+      [busCompanyId]
     );
 
     const [countRows] = await pool.execute(

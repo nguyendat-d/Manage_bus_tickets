@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,77 +7,200 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   body {
     @apply bg-gray-50 text-gray-900;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold leading-tight;
+  }
+  
+  h1 { @apply text-5xl; }
+  h2 { @apply text-4xl; }
+  h3 { @apply text-3xl; }
+  h4 { @apply text-2xl; }
+  h5 { @apply text-xl; }
+  h6 { @apply text-lg; }
+  
+  p {
+    @apply text-gray-600;
+  }
+  
+  a {
+    @apply text-blue-600 hover:text-blue-700 transition-colors;
+  }
+  
+  button {
+    @apply font-medium transition-all;
+  }
 }
 
 @layer components {
-  .btn {
-    @apply inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+  /* Premium Buttons */
+  .btn-modern {
+    @apply px-6 py-3 rounded-lg font-semibold text-white;
+    @apply bg-gradient-to-r from-blue-600 to-blue-500;
+    @apply shadow-lg hover:shadow-xl hover:scale-105;
+    @apply transition-all duration-200;
   }
   
-  .btn-primary {
-    @apply btn bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500 px-4 py-2;
+  .btn-modern:active {
+    @apply scale-100;
   }
   
-  .btn-secondary {
-    @apply btn bg-gray-200 hover:bg-gray-300 text-gray-900 focus:ring-gray-500 px-4 py-2;
+  /* Modern Cards */
+  .card-modern {
+    @apply bg-white rounded-xl shadow-md;
+    @apply border border-gray-100;
+    @apply transition-all duration-300;
+    @apply hover:shadow-lg hover:-translate-y-1;
   }
   
-  .btn-success {
-    @apply btn bg-green-600 hover:bg-green-700 text-white focus:ring-green-500 px-4 py-2;
+  /* Glass Effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-md;
+    @apply border border-white/30;
   }
   
-  .btn-danger {
-    @apply btn bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 px-4 py-2;
+  /* Gradient Text */
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-600 to-cyan-500;
+    @apply bg-clip-text text-transparent;
   }
   
-  .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200;
-  }
-  
-  .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200;
-  }
-  
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-  }
-  
+  /* Status Badges */
   .badge-success {
-    @apply badge bg-green-100 text-green-800;
+    @apply bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .badge-danger {
+    @apply bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium;
   }
   
   .badge-warning {
-    @apply badge bg-yellow-100 text-yellow-800;
-  }
-  
-  .badge-error {
-    @apply badge bg-red-100 text-red-800;
+    @apply bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium;
   }
   
   .badge-info {
-    @apply badge bg-blue-100 text-blue-800;
+    @apply bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium;
   }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  @apply bg-gray-100;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  @apply bg-gray-400 rounded-full;
+  @apply hover:bg-gray-500;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+/* Selection */
+::selection {
+  @apply bg-blue-200 text-blue-900;
+}
+
+::-moz-selection {
+  @apply bg-blue-200 text-blue-900;
+}
+
+/* Focus visible */
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-blue-600;
+}
+
+/* Smooth transitions */
+* {
+  @apply transition-colors transition-transform;
+}
+
+/* Modern VeXeRe-inspired Color System */
+@layer base {
+  :root {
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-white: #ffffff;
+    --text-muted: #9ca3af;
+    --color-primary: #2563eb;
+    --color-secondary: #06b6d4;
+  }
+  
+  /* Ensure text in gradient backgrounds is visible */
+  .bg-gradient-to-r p,
+  .bg-gradient-to-br p,
+  .bg-gradient-to-l p,
+  .bg-blue-50 p,
+  .from-blue-50 p {
+    color: var(--text-primary);
+  }
+  
+  /* Fix for transparent text */
+  .text-transparent {
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+  }
+  
+  /* Ensure labels are always visible */
+  label {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+  
+  /* Input placeholders */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-muted);
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Utility classes for text contrast */
+.text-white-force {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }

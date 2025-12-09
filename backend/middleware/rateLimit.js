@@ -14,7 +14,7 @@ const limiter = {
   // Giới hạn đăng nhập
   login: rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 login attempts per windowMs
+    max: 50, // limit each IP to 50 login attempts per windowMs (increased for testing)
     message: {
       success: false,
       message: 'Too many login attempts from this IP, please try again later.'

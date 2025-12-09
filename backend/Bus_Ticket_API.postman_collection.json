@@ -1,0 +1,1143 @@
+{
+	"info": {
+		"name": "Bus Ticket Management API",
+		"description": "Complete API collection for Bus Ticket Management System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000/api",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "trip_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "booking_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "01. Authentication",
+			"item": [
+				{
+					"name": "Register - Passenger",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"passenger@example.com\",\n  \"password\": \"Password123!\",\n  \"full_name\": \"Nguyen Van A\",\n  \"phone\": \"0901234567\",\n  \"role\": \"passenger\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register - Bus Company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"buscompany@example.com\",\n  \"password\": \"Password123!\",\n  \"full_name\": \"Phuong Trang Express\",\n  \"phone\": \"0287654321\",\n  \"role\": \"bus_company\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+									"    pm.collectionVariables.set(\"user_id\", jsonData.data.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"passenger@example.com\",\n  \"password\": \"Password123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/verify?token={{token}}",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "verify"],
+							"query": [
+								{
+									"key": "token",
+									"value": "{{token}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"passenger@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/forgot-password",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "forgot-password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"reset_token_here\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/reset-password",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "reset-password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "02. Users",
+			"item": [
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["users", "profile"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"full_name\": \"Nguyen Van A Updated\",\n  \"phone\": \"0901234568\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["users", "profile"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile with Avatar",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "full_name",
+									"value": "Nguyen Van A",
+									"type": "text"
+								},
+								{
+									"key": "phone",
+									"value": "0901234567",
+									"type": "text"
+								},
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["users", "profile"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/change-password",
+							"host": ["{{base_url}}"],
+							"path": ["users", "change-password"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Account",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/users/account",
+							"host": ["{{base_url}}"],
+							"path": ["users", "account"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "03. Trips",
+			"item": [
+				{
+					"name": "Search Trips",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.data.trips.length > 0) {",
+									"        pm.collectionVariables.set(\"trip_id\", jsonData.data.trips[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/trips/search?from=Ho Chi Minh&to=Da Lat&date=2025-12-15&page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["trips", "search"],
+							"query": [
+								{
+									"key": "from",
+									"value": "Ho Chi Minh"
+								},
+								{
+									"key": "to",
+									"value": "Da Lat"
+								},
+								{
+									"key": "date",
+									"value": "2025-12-15"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Trip Detail",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/trips/{{trip_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["trips", "{{trip_id}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Seat Map",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/trips/{{trip_id}}/seat-map",
+							"host": ["{{base_url}}"],
+							"path": ["trips", "{{trip_id}}", "seat-map"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Trip (Bus Company)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"route_id\": 1,\n  \"bus_id\": 1,\n  \"departure_time\": \"2025-12-15 08:00:00\",\n  \"arrival_time\": \"2025-12-15 14:00:00\",\n  \"price\": 250000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/trips",
+							"host": ["{{base_url}}"],
+							"path": ["trips"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "04. Bookings",
+			"item": [
+				{
+					"name": "Create Booking",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"booking_id\", jsonData.data.booking.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"trip_id\": {{trip_id}},\n  \"seat_numbers\": [\"A1\", \"A2\"],\n  \"passenger_info\": {\n    \"name\": \"Nguyen Van A\",\n    \"phone\": \"0901234567\",\n    \"email\": \"passenger@example.com\"\n  },\n  \"payment_method\": \"vnpay\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/bookings",
+							"host": ["{{base_url}}"],
+							"path": ["bookings"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Bookings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/bookings?page=1&limit=10&status=confirmed",
+							"host": ["{{base_url}}"],
+							"path": ["bookings"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "confirmed"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Booking QR Code",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/bookings/{{booking_id}}/qr",
+							"host": ["{{base_url}}"],
+							"path": ["bookings", "{{booking_id}}", "qr"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Booking",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"cancellation_reason\": \"Thay doi ke hoach\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/bookings/{{booking_id}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["bookings", "{{booking_id}}", "cancel"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "05. Bus Companies",
+			"item": [
+				{
+					"name": "Register Bus Company",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"company_name\": \"Phuong Trang Express\",\n  \"tax_code\": \"0123456789\",\n  \"address\": \"272 De Tham, Phuong Pham Ngu Lao, Quan 1, TP.HCM\",\n  \"phone\": \"0287654321\",\n  \"email\": \"contact@phuongtrang.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/bus-companies/register",
+							"host": ["{{base_url}}"],
+							"path": ["bus-companies", "register"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Bus Company Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/bus-companies/profile",
+							"host": ["{{base_url}}"],
+							"path": ["bus-companies", "profile"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Bus Company Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "company_name",
+									"value": "Phuong Trang Express Updated",
+									"type": "text"
+								},
+								{
+									"key": "phone",
+									"value": "0287654322",
+									"type": "text"
+								},
+								{
+									"key": "documents",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/bus-companies/profile",
+							"host": ["{{base_url}}"],
+							"path": ["bus-companies", "profile"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Bus",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"license_plate\": \"51B-12345\",\n  \"bus_type\": \"limousine\",\n  \"total_seats\": 22,\n  \"amenities\": [\"wifi\", \"ac\", \"water\", \"blanket\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/bus-companies/buses",
+							"host": ["{{base_url}}"],
+							"path": ["bus-companies", "buses"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Buses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/bus-companies/buses?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["bus-companies", "buses"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Trips",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/bus-companies/trips?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["bus-companies", "trips"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Bookings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/bus-companies/bookings?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["bus-companies", "bookings"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/bus-companies/stats",
+							"host": ["{{base_url}}"],
+							"path": ["bus-companies", "stats"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "06. Payments",
+			"item": [
+				{
+					"name": "Create VNPay Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"booking_id\": {{booking_id}},\n  \"amount\": 500000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/payments/vnpay",
+							"host": ["{{base_url}}"],
+							"path": ["payments", "vnpay"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/payments/history?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["payments", "history"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "VNPay Return (Callback)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/payments/vnpay-return?vnp_Amount=50000000&vnp_BankCode=NCB&vnp_ResponseCode=00",
+							"host": ["{{base_url}}"],
+							"path": ["payments", "vnpay-return"],
+							"query": [
+								{
+									"key": "vnp_Amount",
+									"value": "50000000"
+								},
+								{
+									"key": "vnp_BankCode",
+									"value": "NCB"
+								},
+								{
+									"key": "vnp_ResponseCode",
+									"value": "00"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "07. Admin",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/users?page=1&limit=10&role=passenger",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "role",
+									"value": "passenger"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"suspended\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/:id/status",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", ":id", "status"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Bus Companies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/bus-companies?page=1&limit=10&status=pending",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "bus-companies"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "pending"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Approve/Reject Bus Company",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/bus-companies/:id/status",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "bus-companies", ":id", "status"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Routes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/routes?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "routes"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Route",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"departure_city\": \"Ho Chi Minh\",\n  \"departure_station\": \"Ben Xe Mien Dong\",\n  \"arrival_city\": \"Da Lat\",\n  \"arrival_station\": \"Ben Xe Da Lat\",\n  \"distance_km\": 308,\n  \"estimated_duration_minutes\": 360\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/routes",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "routes"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Route",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"distance_km\": 310,\n  \"estimated_duration_minutes\": 370\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/routes/:id",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "routes", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Route",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/routes/:id",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "routes", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Analytics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/admin/analytics",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "analytics"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "08. System",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

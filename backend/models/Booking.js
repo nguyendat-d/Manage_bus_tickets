@@ -135,8 +135,8 @@ class Booking {
        JOIN users u ON b.user_id = u.id
        WHERE t.bus_company_id = ?
        ORDER BY b.created_at DESC
-       LIMIT ? OFFSET ?`,
-      [busCompanyId, limit, offset]
+       LIMIT ${parseInt(limit)} OFFSET ${offset}`,
+      [busCompanyId]
     );
 
     const [countRows] = await pool.execute(
