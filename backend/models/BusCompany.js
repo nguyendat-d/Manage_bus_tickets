@@ -56,7 +56,10 @@ class BusCompany {
     const offset = (page - 1) * limit;
 
     let query = `
-      SELECT bc.*, u.email, u.full_name, u.phone,
+      SELECT bc.*, 
+             u.email as user_email, 
+             u.full_name as contact_name, 
+             u.phone as user_phone,
              (SELECT COUNT(*) FROM trips t WHERE t.bus_company_id = bc.id) as total_trips,
              (SELECT COUNT(*) FROM buses b WHERE b.bus_company_id = bc.id) as total_buses
       FROM bus_companies bc

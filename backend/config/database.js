@@ -11,14 +11,15 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // XÓA các options không hợp lệ
-  // acquireTimeout: 60000,
-  // timeout: 60000,
-  // reconnect: true
+  connectTimeout: 30000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000
 });
+
 console.log("USER:", process.env.DB_USER);
 console.log("PASS:", process.env.DB_PASSWORD);
-// Test connection
+
+// Test connection with better error handling
 pool.getConnection()
   .then(connection => {
     console.log('✅ MySQL Database connected successfully');
@@ -26,7 +27,8 @@ pool.getConnection()
   })
   .catch(err => {
     console.error('❌ Database connection failed:', err.message);
-    process.exit(1);
+    console.error('❌ Make sure MySQL is running and credentials are correct');
+    // Không exit để server vẫn chạy, chỉ log warning
   });
 
 

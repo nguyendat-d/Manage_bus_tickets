@@ -77,7 +77,7 @@ class Route {
   }
 
   static async update(id, routeData) {
-    const { departure_city, departure_station, arrival_city, arrival_station, distance_km, estimated_duration_minutes, status } = routeData;
+    const { departure_city, departure_station, arrival_city, arrival_station, distance_km, estimated_duration_minutes, status = 'active' } = routeData;
     const [result] = await pool.execute(
       `UPDATE routes 
        SET departure_city = ?, departure_station = ?, arrival_city = ?, arrival_station = ?, 

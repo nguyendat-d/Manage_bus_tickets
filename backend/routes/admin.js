@@ -9,6 +9,7 @@ router.use(auth.authenticate, auth.authorizeAdmin);
 // Quản lý users
 router.get('/users', adminController.getUsers);
 router.put('/users/:id/status', adminController.updateUserStatus);
+router.put('/users/:id/role', adminController.updateUserRole);
 
 // Quản lý nhà xe
 router.get('/bus-companies', adminController.getBusCompanies);

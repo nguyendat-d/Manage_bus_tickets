@@ -6,6 +6,8 @@ const validation = require('../middleware/validation');
 
 // Public routes
 router.get('/search', tripController.searchTrips);
+router.get('/routes', tripController.getRoutes);
+router.get('/featured', tripController.getFeaturedTrips);
 router.get('/:id', tripController.getTripDetail);
 router.get('/:id/seat-map', tripController.getSeatMap);
 

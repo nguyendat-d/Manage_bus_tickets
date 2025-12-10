@@ -6,13 +6,19 @@ const tripController = {
   // Tìm kiếm chuyến xe
   searchTrips: async (req, res) => {
     try {
-      const { from, to, date, page = 1, limit = 10 } = req.query;
+      const { departure_city, arrival_city, date, from, to, page = 1, limit = 10 } = req.query;
+      
+      // Support both param styles
+      const departureCity = departure_city || from;
+      const arrivalCity = arrival_city || to;
+      
+      console.log('Search params:', { departureCity, arrivalCity, date });
       
       // Validate required params
-      if (!from || !to || !date) {
+      if (!departureCity || !arrivalCity || !date) {
         return res.status(400).json({
           success: false,
-          message: 'Missing required parameters: from, to, date'
+          message: 'Missing required parameters: departure_city, arrival_city, date'
         });
       }
 
@@ -61,17 +67,22 @@ const tripController = {
 
       // Prepare params for main query (3 params only - không có limit/offset)
       const queryParams = [
-        `%${from}%`, 
-        `%${to}%`, 
+        `%${departureCity}%`, 
+        `%${arrivalCity}%`, 
         date
       ];
 
       // Prepare params for count query (3 params)
-      const countParams = [`%${from}%`, `%${to}%`, date];
+      const countParams = [`%${departureCity}%`, `%${arrivalCity}%`, date];
 
+      console.log('Executing query:', query);
+      console.log('Query params:', queryParams);
+      
       const [trips] = await pool.execute(query, queryParams);
       const [countResult] = await pool.execute(countQuery, countParams);
       const total = countResult[0].total;
+
+      console.log(`Found ${trips.length} trips (total: ${total})`);
 
       res.json({
         success: true,
@@ -225,6 +236,75 @@ const tripController = {
       });
     } catch (error) {
       console.error('Get seat map error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  },
+
+  // Lấy danh sách tuyến đường (routes)
+  getRoutes: async (req, res) => {
+    try {
+      const [routes] = await pool.execute(
+        `SELECT 
+          id,
+          departure_city, 
+          arrival_city,
+          departure_station,
+          arrival_station,
+          distance_km,
+          estimated_duration_minutes,
+          status
+        FROM routes 
+        WHERE status = 'active'
+        ORDER BY departure_city, arrival_city`
+      );
+
+      console.log(`📍 Found ${routes.length} active routes`);
+
+      res.json({
+        success: true,
+        data: routes
+      });
+    } catch (error) {
+      console.error('❌ Get routes error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  },
+
+  // Lấy danh sách chuyến xe nổi bật (featured trips)
+  getFeaturedTrips: async (req, res) => {
+    try {
+      const [trips] = await pool.execute(
+        `SELECT 
+          t.id, t.departure_time, t.arrival_time, t.price, t.available_seats,
+          r.departure_city, r.departure_station,
+          r.arrival_city, r.arrival_station,
+          r.distance_km, r.estimated_duration_minutes,
+          bc.company_name, bc.rating as company_rating,
+          b.bus_type, b.amenities, b.total_seats
+        FROM trips t
+        JOIN routes r ON t.route_id = r.id
+        JOIN bus_companies bc ON t.bus_company_id = bc.id
+        JOIN buses b ON t.bus_id = b.id
+        WHERE t.status = 'scheduled'
+        AND bc.status = 'approved'
+        AND DATE(t.departure_time) >= CURDATE()
+        AND t.available_seats > 0
+        ORDER BY t.departure_time ASC
+        LIMIT 6`
+      );
+
+      res.json({
+        success: true,
+        data: trips
+      });
+    } catch (error) {
+      console.error('Get featured trips error:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'

@@ -10,6 +10,16 @@ const authController = {
     try {
       const { email, password, full_name, phone, role = 'passenger' } = req.body;
 
+      console.log('Register request:', { email, full_name, phone, role });
+
+      // Validate required fields
+      if (!email || !password || !full_name || !phone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields: email, password, full_name, phone'
+        });
+      }
+
       // Kiểm tra email đã tồn tại
       const [existingUsers] = await pool.execute(
         'SELECT id FROM users WHERE email = ?',
@@ -36,10 +46,57 @@ const authController = {
       // Nếu là nhà xe, tạo bản ghi trong bus_companies
       if (role === 'bus_company') {
         const { company_name, tax_code, address } = req.body;
-        await pool.execute(
-          'INSERT INTO bus_companies (user_id, company_name, tax_code, address) VALUES (?, ?, ?, ?)',
-          [result.insertId, company_name, tax_code, address]
-        );
+        
+        console.log('Creating bus company:', { company_name, tax_code, address, user_id: result.insertId });
+        
+        // Validate required fields for bus company
+        if (!company_name || !address) {
+          // Rollback user creation
+          await pool.execute('DELETE FROM users WHERE id = ?', [result.insertId]);
+          return res.status(400).json({
+            success: false,
+            message: 'Company name and address are required for bus company registration'
+          });
+        }
+        
+        try {
+          // Chỉ thêm tax_code nếu có giá trị, để tránh lỗi duplicate khi null
+          const taxCodeValue = tax_code && tax_code.trim() !== '' ? tax_code.trim() : null;
+          
+          const [busCompanyResult] = await pool.execute(
+            'INSERT INTO bus_companies (user_id, company_name, tax_code, address, phone, email, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [result.insertId, company_name.trim(), taxCodeValue, address.trim(), phone, email, 'pending']
+          );
+          
+          console.log('✅ Bus company created successfully:', {
+            companyId: busCompanyResult.insertId,
+            userId: result.insertId,
+            company_name
+          });
+        } catch (busCompanyError) {
+          // Rollback user creation nếu tạo bus_company thất bại
+          await pool.execute('DELETE FROM users WHERE id = ?', [result.insertId]);
+          
+          console.error('❌ Bus company creation error:', {
+            code: busCompanyError.code,
+            errno: busCompanyError.errno,
+            sqlMessage: busCompanyError.sqlMessage,
+            sql: busCompanyError.sql
+          });
+          
+          // Xử lý lỗi duplicate tax_code
+          if (busCompanyError.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({
+              success: false,
+              message: 'Mã số thuế đã tồn tại. Vui lòng sử dụng mã số thuế khác hoặc để trống.'
+            });
+          }
+          
+          return res.status(500).json({
+            success: false,
+            message: 'Lỗi khi tạo thông tin nhà xe: ' + (busCompanyError.sqlMessage || busCompanyError.message)
+          });
+        }
       }
 
       // Tạo JWT token
@@ -49,9 +106,18 @@ const authController = {
         { expiresIn: '7d' }
       );
 
+      // Tạo thông báo phù hợp với loại tài khoản
+      let message = 'User registered successfully';
+      let requiresApproval = false;
+      
+      if (role === 'bus_company') {
+        message = 'Đăng ký thành công! Tài khoản của bạn đang chờ được Admin phê duyệt. Bạn sẽ nhận được email thông báo khi tài khoản được kích hoạt.';
+        requiresApproval = true;
+      }
+
       res.status(201).json({
         success: true,
-        message: 'User registered successfully',
+        message: message,
         data: {
           token,
           user: {
@@ -60,7 +126,8 @@ const authController = {
             full_name,
             phone,
             role
-          }
+          },
+          requiresApproval
         }
       });
     } catch (error) {
@@ -105,8 +172,30 @@ const authController = {
       if (user.status !== 'active') {
         return res.status(401).json({
           success: false,
-          message: 'Account is suspended'
+          message: 'Tài khoản của bạn đã bị tạm ngưng hoặc chưa được kích hoạt'
         });
+      }
+
+      // Nếu là nhà xe, kiểm tra trạng thái phê duyệt
+      if (user.role === 'bus_company') {
+        const [companies] = await pool.execute(
+          'SELECT status FROM bus_companies WHERE user_id = ?',
+          [user.id]
+        );
+        
+        if (companies.length > 0 && companies[0].status === 'pending') {
+          return res.status(401).json({
+            success: false,
+            message: 'Tài khoản nhà xe của bạn đang chờ Admin phê duyệt. Vui lòng kiên nhẫn chờ đợi.'
+          });
+        }
+        
+        if (companies.length > 0 && companies[0].status === 'rejected') {
+          return res.status(401).json({
+            success: false,
+            message: 'Tài khoản nhà xe của bạn đã bị từ chối. Vui lòng liên hệ Admin để biết thêm chi tiết.'
+          });
+        }
       }
 
       // Tạo JWT token

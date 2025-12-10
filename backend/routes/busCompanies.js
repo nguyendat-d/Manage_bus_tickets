@@ -13,7 +13,12 @@ router.get('/profile', busCompanyController.getProfile);
 router.put('/profile', upload.single('documents'), handleUploadError, busCompanyController.updateProfile);
 router.post('/buses', busCompanyController.addBus);
 router.get('/buses', busCompanyController.getBuses);
+router.put('/buses/:id', busCompanyController.updateBus);
+router.delete('/buses/:id', busCompanyController.deleteBus);
 router.get('/trips', busCompanyController.getTrips);
+router.post('/trips', busCompanyController.createTrip);
+router.put('/trips/:id', busCompanyController.updateTrip);
+router.delete('/trips/:id', busCompanyController.deleteTrip);
 router.get('/bookings', busCompanyController.getBookings);
 router.get('/stats', busCompanyController.getStats);
 

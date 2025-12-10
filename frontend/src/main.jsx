@@ -1,24 +1,14 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import { HelmetProvider } from 'react-helmet-async' // THÊM DÒNG NÀY
-import App from './App.jsx'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { NotificationProvider } from './contexts/NotificationContext';
+import './index.css';
+import './styles/payment.css';
 
-// Import CSS files
-import './index.css'
-import './styles/globals.css'
-import './styles/components.css'
-import './styles/bus-ticket.css'
-
-const root = document.getElementById('root')
-if (!root) throw new Error('Root element not found in public/index.html')
-
-ReactDOM.createRoot(root).render(
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <HelmetProvider> {/* BỌC THÊM HelmetProvider */}
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </HelmetProvider>
+    <NotificationProvider>
+      <App />
+    </NotificationProvider>
   </React.StrictMode>
-)
+);

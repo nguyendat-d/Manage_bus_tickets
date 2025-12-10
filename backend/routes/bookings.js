@@ -9,7 +9,9 @@ router.use(auth.authenticate);
 
 router.post('/', validation.createBooking, bookingController.createBooking);
 router.get('/', bookingController.getUserBookings);
+router.get('/:id', bookingController.getBookingDetail);
 router.get('/:id/qr', bookingController.getBookingQR);
 router.put('/:id/cancel', bookingController.cancelBooking);
+router.put('/:id/complete', bookingController.completeBooking);
 
 module.exports = router;

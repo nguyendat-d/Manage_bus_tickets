@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Bookings API</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        input, button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+        .booking-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Bookings API</h1>
+        
+        <div class="section">
+            <h3>🔑 Bước 1: Lấy Token</h3>
+            <p class="info">Mở Console (F12) và chạy: <code>localStorage.getItem('token')</code></p>
+            <input type="text" id="token" placeholder="Paste token ở đây..." style="width: 80%;">
+            <button onclick="saveToken()">💾 Lưu Token</button>
+        </div>
+
+        <div class="section">
+            <h3>📋 Bước 2: Test API</h3>
+            <button onclick="testGetBookings()">🔍 Lấy danh sách vé</button>
+            <button onclick="checkAuth()">✅ Kiểm tra Auth</button>
+            <button onclick="clearResult()">🗑️ Xóa kết quả</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let authToken = '';
+
+        function saveToken() {
+            authToken = document.getElementById('token').value.trim();
+            if (authToken) {
+                localStorage.setItem('test_token', authToken);
+                showResult('✅ Token đã được lưu!', 'success');
+            } else {
+                showResult('❌ Vui lòng nhập token!', 'error');
+            }
+        }
+
+        function loadToken() {
+            const token = localStorage.getItem('test_token') || document.getElementById('token').value.trim();
+            if (token) {
+                authToken = token;
+                document.getElementById('token').value = token;
+                return true;
+            }
+            showResult('❌ Chưa có token! Vui lòng nhập token trước.', 'error');
+            return false;
+        }
+
+        async function checkAuth() {
+            if (!loadToken()) return;
+
+            showResult('⏳ Đang kiểm tra token...', 'info');
+
+            try {
+                const response = await fetch('http://localhost:5000/api/bookings?limit=1', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResult(`✅ Token hợp lệ!\n\nStatus: ${response.status}\nResponse:\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult(`❌ Token không hợp lệ hoặc đã hết hạn!\n\nStatus: ${response.status}\nError:\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Lỗi kết nối: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGetBookings() {
+            if (!loadToken()) return;
+
+            showResult('⏳ Đang tải danh sách vé...', 'info');
+
+            try {
+                const response = await fetch('http://localhost:5000/api/bookings?limit=100', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    const bookings = data.data.bookings || [];
+                    
+                    let result = `✅ Tải thành công!\n\n`;
+                    result += `📊 Tổng số vé: ${bookings.length}\n`;
+                    result += `📄 Trang: ${data.data.pagination?.page || 1}/${data.data.pagination?.pages || 1}\n\n`;
+                    
+                    if (bookings.length === 0) {
+                        result += '⚠️ Không có vé nào!\n\n';
+                        result += '💡 Hướng dẫn:\n';
+                        result += '1. Vào http://localhost:3001/search\n';
+                        result += '2. Tìm và đặt vé\n';
+                        result += '3. Thanh toán vé\n';
+                        result += '4. Quay lại đây test lại\n';
+                    } else {
+                        // Thống kê theo trạng thái
+                        const stats = {
+                            pending: 0,
+                            confirmed: 0,
+                            completed: 0,
+                            cancelled: 0
+                        };
+                        
+                        bookings.forEach(b => {
+                            stats[b.booking_status] = (stats[b.booking_status] || 0) + 1;
+                        });
+                        
+                        result += `📈 Thống kê:\n`;
+                        result += `  ⏳ Chờ thanh toán: ${stats.pending}\n`;
+                        result += `  🎫 Đã xác nhận: ${stats.confirmed}\n`;
+                        result += `  ✅ Đã hoàn thành: ${stats.completed}\n`;
+                        result += `  ❌ Đã hủy: ${stats.cancelled}\n\n`;
+                        
+                        result += `📋 Danh sách vé:\n`;
+                        result += `${'='.repeat(60)}\n\n`;
+                        
+                        bookings.forEach((booking, index) => {
+                            result += `${index + 1}. Vé #${booking.booking_code}\n`;
+                            result += `   📍 ${booking.departure_city} → ${booking.arrival_city}\n`;
+                            result += `   🚌 ${booking.company_name}\n`;
+                            result += `   📅 ${new Date(booking.departure_time).toLocaleString('vi-VN')}\n`;
+                            result += `   🪑 Ghế: ${formatSeats(booking.seat_numbers)}\n`;
+                            result += `   💰 ${formatMoney(booking.total_amount)}\n`;
+                            result += `   📊 Trạng thái: ${getStatusText(booking.booking_status)}\n`;
+                            result += `\n`;
+                        });
+                    }
+                    
+                    showResult(result, 'success');
+                } else {
+                    showResult(`❌ API trả về lỗi!\n\nStatus: ${response.status}\nError:\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Lỗi kết nối: ${error.message}`, 'error');
+            }
+        }
+
+        function formatSeats(seatNumbers) {
+            try {
+                if (!seatNumbers) return 'N/A';
+                const seats = typeof seatNumbers === 'string' ? JSON.parse(seatNumbers) : seatNumbers;
+                return Array.isArray(seats) ? seats.join(', ') : seats.toString();
+            } catch {
+                return seatNumbers?.toString() || 'N/A';
+            }
+        }
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                pending: '⏳ Chờ thanh toán',
+                confirmed: '🎫 Đã xác nhận',
+                completed: '✅ Đã hoàn thành',
+                cancelled: '❌ Đã hủy'
+            };
+            return statusMap[status] || status;
+        }
+
+        function showResult(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = type;
+            resultDiv.textContent = message;
+        }
+
+        function clearResult() {
+            document.getElementById('result').textContent = '';
+        }
+
+        // Auto load token nếu có
+        window.onload = function() {
+            const savedToken = localStorage.getItem('test_token');
+            if (savedToken) {
+                document.getElementById('token').value = savedToken;
+                authToken = savedToken;
+                showResult('✅ Đã load token từ localStorage', 'success');
+            } else {
+                showResult('💡 Hướng dẫn sử dụng:\n1. Đăng nhập vào http://localhost:3001\n2. Mở Console (F12)\n3. Chạy: localStorage.getItem("token")\n4. Copy token và paste vào ô trên\n5. Click "Lưu Token"\n6. Click "Lấy danh sách vé"', 'info');
+            }
+        };
+    </script>
+</body>
+</html>

@@ -23,8 +23,8 @@ const limiter = {
 
   // Giới hạn đăng ký
   register: rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // limit each IP to 3 registration attempts per windowMs
+    windowMs: 15 * 60 * 1000, // 15 minutes (giảm từ 1 giờ)
+    max: 20, // limit each IP to 20 registration attempts per windowMs (tăng từ 3)
     message: {
       success: false,
       message: 'Too many registration attempts from this IP, please try again later.'

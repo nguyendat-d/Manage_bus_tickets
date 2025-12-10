@@ -2,23 +2,24 @@ const pool = require('../config/database');
 
 async function testAnalytics() {
   try {
-    console.log('Testing analytics queries...\n');
+    console.log('🧪 Testing Analytics Queries (Full Test)\n');
+    console.log('==========================================\n');
     
     // Test 1: Revenue stats
     try {
       const [revenueStats] = await pool.execute(
         `SELECT 
           COUNT(*) as total_bookings,
-          SUM(total_amount) as total_revenue,
-          AVG(total_amount) as average_booking,
+          COALESCE(SUM(total_amount), 0) as total_revenue,
+          COALESCE(AVG(total_amount), 0) as average_booking,
           COUNT(DISTINCT user_id) as unique_customers
          FROM bookings 
-         WHERE payment_status = 'paid' 
-           AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`
+         WHERE payment_status = 'paid'`
       );
       console.log('✅ Revenue stats OK:', revenueStats[0]);
     } catch (e) {
       console.log('❌ Revenue stats ERROR:', e.message);
+      console.log('   Stack:', e.stack);
     }
     
     // Test 2: Company stats
@@ -35,25 +36,39 @@ async function testAnalytics() {
       console.log('❌ Company stats ERROR:', e.message);
     }
     
-    // Test 3: Popular routes
+    // Test 3: Popular routes (using query instead of execute)
     try {
-      const [rows] = await pool.execute(
+      const [rows] = await pool.query(
         `SELECT 
-          r.*,
+          r.departure_city,
+          r.arrival_city,
+          COUNT(DISTINCT t.id) as trip_count,
           COUNT(b.id) as booking_count,
-          AVG(t.price) as average_price
+          COALESCE(SUM(b.total_amount), 0) as total_revenue
          FROM routes r
-         JOIN trips t ON r.id = t.route_id
-         JOIN bookings b ON t.id = b.trip_id
+         INNER JOIN trips t ON r.id = t.route_id
+         INNER JOIN bookings b ON t.id = b.trip_id
          WHERE b.payment_status = 'paid'
-         GROUP BY r.id
-         ORDER BY booking_count DESC
-         LIMIT ?`,
-        [5]
+         GROUP BY r.id, r.departure_city, r.arrival_city
+         ORDER BY total_revenue DESC
+         LIMIT 5`
       );
       console.log('✅ Popular routes OK:', rows.length, 'routes');
+      if (rows.length > 0) {
+        console.log('   Sample:', rows[0]);
+      } else {
+        console.log('   ⚠️ No routes found - checking data...');
+        const [check] = await pool.query(`
+          SELECT 
+            (SELECT COUNT(*) FROM routes) as routes,
+            (SELECT COUNT(*) FROM trips) as trips,
+            (SELECT COUNT(*) FROM bookings WHERE payment_status='paid') as paid_bookings
+        `);
+        console.log('   Data check:', check[0]);
+      }
     } catch (e) {
       console.log('❌ Popular routes ERROR:', e.message);
+      console.log('   Stack:', e.stack);
     }
     
     // Test 4: Monthly revenue

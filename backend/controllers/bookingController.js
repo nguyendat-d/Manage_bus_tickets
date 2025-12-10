@@ -11,8 +11,41 @@ const bookingController = {
     try {
       await connection.beginTransaction();
 
-      const { trip_id, passenger_info, seat_numbers, payment_method } = req.body;
+      const { trip_id, seats, total_amount, passenger_info } = req.body;
       const user_id = req.user.id;
+
+      console.log('Creating booking - Request body:', { trip_id, seats, total_amount, user_id });
+
+      // Validate input
+      if (!trip_id || !seats || !total_amount) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields: trip_id, seats, total_amount'
+        });
+      }
+
+      // Parse seats string to array
+      const seatArray = Array.isArray(seats) ? seats : seats.split(',').map(s => s.trim());
+      const seatNumbers = JSON.stringify(seatArray);
+      
+      // Prepare passenger info - use provided data or create default from user
+      let passengerInfoJson;
+      if (passenger_info) {
+        passengerInfoJson = typeof passenger_info === 'string' ? passenger_info : JSON.stringify(passenger_info);
+      } else {
+        // Get user info for default passenger data
+        const [users] = await connection.execute(
+          'SELECT full_name, phone, email FROM users WHERE id = ?',
+          [user_id]
+        );
+        const user = users[0];
+        passengerInfoJson = JSON.stringify({
+          name: user.full_name || '',
+          phone: user.phone || '',
+          email: user.email || ''
+        });
+      }
 
       // Kiểm tra chuyến xe
       const [trips] = await connection.execute(
@@ -31,7 +64,7 @@ const bookingController = {
       const trip = trips[0];
 
       // Kiểm tra số ghế còn trống
-      if (trip.available_seats < seat_numbers.length) {
+      if (trip.available_seats < seatArray.length) {
         await connection.rollback();
         return res.status(400).json({
           success: false,
@@ -39,44 +72,26 @@ const bookingController = {
         });
       }
 
-      // Kiểm tra ghế có bị đặt trước không
-      const placeholders = seat_numbers.map(() => '?').join(',');
-      const [existingBookings] = await connection.execute(
-        `SELECT id FROM bookings 
-         WHERE trip_id = ? AND booking_status = 'confirmed' 
-         AND JSON_OVERLAPS(seat_numbers, JSON_ARRAY(${placeholders}))`,
-        [trip_id, ...seat_numbers]
-      );
-
-      if (existingBookings.length > 0) {
-        await connection.rollback();
-        return res.status(400).json({
-          success: false,
-          message: 'Some seats are already booked'
-        });
-      }
-
       // Tạo booking code
       const booking_code = 'BK' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
-
-      // Tính tổng tiền
-      const total_amount = trip.price * seat_numbers.length;
 
       // Tạo booking
       const [bookingResult] = await connection.execute(
         `INSERT INTO bookings 
-         (user_id, trip_id, booking_code, passenger_info, seat_numbers, total_amount, payment_method) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [user_id, trip_id, booking_code, JSON.stringify(passenger_info), JSON.stringify(seat_numbers), total_amount, payment_method]
+         (user_id, trip_id, booking_code, seat_numbers, passenger_info, total_amount, booking_status, payment_status) 
+         VALUES (?, ?, ?, ?, ?, ?, 'confirmed', 'pending')`,
+        [user_id, trip_id, booking_code, seatNumbers, passengerInfoJson, total_amount]
       );
+
+      console.log('Booking created with ID:', bookingResult.insertId);
 
       // Cập nhật số ghế còn lại
       await connection.execute(
         'UPDATE trips SET available_seats = available_seats - ? WHERE id = ?',
-        [seat_numbers.length, trip_id]
+        [seatArray.length, trip_id]
       );
 
-      // Tạo QR Code
+      // Tạo QR Code (optional - không làm fail transaction)
       let qrCodeUrl = null;
       try {
         qrCodeUrl = await generateQRCode(booking_code);
@@ -95,20 +110,26 @@ const bookingController = {
         success: true,
         message: 'Booking created successfully',
         data: {
-          bookingId: bookingResult.insertId,
-          bookingCode: booking_code,
-          totalAmount: total_amount,
-          qrCodeUrl: qrCodeUrl,
-          paymentMethod: payment_method
+          id: bookingResult.insertId,
+          booking_code: booking_code,
+          trip_id: trip_id,
+          seat_numbers: seatArray,
+          passenger_info: JSON.parse(passengerInfoJson),
+          total_amount: total_amount,
+          booking_status: 'confirmed',
+          payment_status: 'pending',
+          qr_code_url: qrCodeUrl
         }
       });
 
     } catch (error) {
       await connection.rollback();
       console.error('Create booking error:', error);
+      console.error('Error stack:', error.stack);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     } finally {
       connection.release();
@@ -179,20 +200,19 @@ const bookingController = {
     }
   },
 
-  // Hủy vé
-  cancelBooking: async (req, res) => {
+  // Hoàn thành chuyến đi
+  completeBooking: async (req, res) => {
     const connection = await pool.getConnection();
     
     try {
       await connection.beginTransaction();
 
       const { id } = req.params;
-      const { reason } = req.body;
       const user_id = req.user.id;
 
       // Kiểm tra booking
       const [bookings] = await connection.execute(
-        `SELECT b.*, t.departure_time 
+        `SELECT b.*, t.departure_time, t.arrival_time 
          FROM bookings b
          JOIN trips t ON b.trip_id = t.id
          WHERE b.id = ? AND b.user_id = ?`,
@@ -209,13 +229,115 @@ const bookingController = {
 
       const booking = bookings[0];
 
+      // Kiểm tra chỉ cho phép hoàn thành vé đã xác nhận
+      if (booking.booking_status !== 'confirmed') {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Only confirmed bookings can be completed'
+        });
+      }
+
+      // Kiểm tra đã qua giờ khởi hành chưa
+      const departureTime = new Date(booking.departure_time);
+      const now = new Date();
+
+      if (now < departureTime) {
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot complete booking before departure time'
+        });
+      }
+
+      // Cập nhật trạng thái booking thành completed
+      await connection.execute(
+        `UPDATE bookings 
+         SET booking_status = 'completed'
+         WHERE id = ?`,
+        [id]
+      );
+
+      await connection.commit();
+
+      res.json({
+        success: true,
+        message: 'Booking completed successfully'
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      console.error('Complete booking error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    } finally {
+      connection.release();
+    }
+  },
+
+  // Hủy vé
+  cancelBooking: async (req, res) => {
+    const connection = await pool.getConnection();
+    
+    try {
+      await connection.beginTransaction();
+
+      const { id } = req.params;
+      const { cancellation_reason } = req.body;
+      const user_id = req.user.id;
+
+      console.log(`🎫 Cancel booking request - ID: ${id}, User: ${user_id}, Reason: ${cancellation_reason}`);
+
+      // Kiểm tra booking
+      const [bookings] = await connection.execute(
+        `SELECT b.*, t.departure_time 
+         FROM bookings b
+         JOIN trips t ON b.trip_id = t.id
+         WHERE b.id = ? AND b.user_id = ?`,
+        [id, user_id]
+      );
+
+      if (bookings.length === 0) {
+        console.log(`❌ Booking ${id} not found for user ${user_id}`);
+        await connection.rollback();
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
+      }
+
+      const booking = bookings[0];
+      console.log(`📋 Found booking:`, {
+        id: booking.id,
+        booking_code: booking.booking_code,
+        booking_status: booking.booking_status,
+        payment_status: booking.payment_status,
+        seat_numbers: booking.seat_numbers,
+        trip_id: booking.trip_id
+      });
+
+      // Kiểm tra booking đã bị cancel chưa
+      if (booking.booking_status === 'cancelled') {
+        console.log(`⚠️ Booking ${id} already cancelled`);
+        await connection.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'Booking has already been cancelled'
+        });
+      }
+
       // Kiểm tra thời gian hủy vé (trước 2 giờ)
       const departureTime = new Date(booking.departure_time);
       const now = new Date();
       const timeDiff = departureTime.getTime() - now.getTime();
       const hoursDiff = timeDiff / (1000 * 60 * 60);
 
+      console.log(`⏰ Time check - Departure: ${departureTime}, Now: ${now}, Hours diff: ${hoursDiff.toFixed(2)}`);
+
       if (hoursDiff < 2) {
+        console.log(`❌ Cannot cancel - less than 2 hours before departure`);
         await connection.rollback();
         return res.status(400).json({
           success: false,
@@ -224,39 +346,52 @@ const bookingController = {
       }
 
       // Cập nhật trạng thái booking
-      await connection.execute(
+      console.log(`🔄 Updating booking status to cancelled...`);
+      const [updateResult] = await connection.execute(
         `UPDATE bookings 
          SET booking_status = 'cancelled', cancellation_reason = ?
          WHERE id = ?`,
-        [reason, id]
+        [cancellation_reason, id]
       );
+      console.log(`✅ Booking status updated, affected rows: ${updateResult.affectedRows}`);
 
       // Cập nhật số ghế available
-      const seatCount = JSON.parse(booking.seat_numbers).length;
+      let seatNumbers;
+      if (typeof booking.seat_numbers === 'string') {
+        try {
+          seatNumbers = JSON.parse(booking.seat_numbers);
+        } catch (e) {
+          // Nếu parse lỗi, thử split bằng comma
+          seatNumbers = booking.seat_numbers.split(',').map(s => s.trim());
+        }
+      } else if (Array.isArray(booking.seat_numbers)) {
+        seatNumbers = booking.seat_numbers;
+      } else {
+        seatNumbers = [];
+      }
+      
+      const seatCount = seatNumbers.length;
+      console.log(`💺 Releasing ${seatCount} seats (${seatNumbers.join(', ')}) for trip ${booking.trip_id}...`);
       await connection.execute(
         'UPDATE trips SET available_seats = available_seats + ? WHERE id = ?',
         [seatCount, booking.trip_id]
       );
+      console.log(`✅ Seats released successfully`);
 
       // Hoàn tiền nếu đã thanh toán
       if (booking.payment_status === 'paid') {
+        console.log(`💰 Processing refund for booking ${id}, amount: ${booking.total_amount}đ...`);
         await connection.execute(
           `UPDATE bookings 
            SET payment_status = 'refunded' 
            WHERE id = ?`,
           [id]
         );
-
-        // Ghi log hoàn tiền
-        await connection.execute(
-          `INSERT INTO payments 
-           (booking_id, payment_method, amount, payment_status, payment_date) 
-           VALUES (?, ?, ?, 'refunded', NOW())`,
-          [id, booking.payment_method, booking.total_amount]
-        );
+        console.log(`✅ Refund status updated in bookings table`);
       }
 
       await connection.commit();
+      console.log(`✅ Transaction committed successfully - Booking ${id} cancelled`);
 
       res.json({
         success: true,
@@ -265,10 +400,11 @@ const bookingController = {
 
     } catch (error) {
       await connection.rollback();
-      console.error('Cancel booking error:', error);
+      console.error('❌ Cancel booking error:', error);
+      console.error('Error stack:', error.stack);
       res.status(500).json({
         success: false,
-        message: 'Internal server error'
+        message: error.message || 'Internal server error'
       });
     } finally {
       connection.release();
@@ -318,6 +454,72 @@ const bookingController = {
       });
     } catch (error) {
       console.error('Get booking QR error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+      });
+    }
+  },
+
+  // Lấy chi tiết 1 booking
+  getBookingDetail: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const user_id = req.user.id;
+
+      const [bookings] = await pool.execute(
+        `SELECT 
+          b.*,
+          t.departure_time, t.arrival_time, t.price as base_price,
+          r.departure_city, r.departure_station,
+          r.arrival_city, r.arrival_station,
+          bc.company_name,
+          bus.bus_type
+        FROM bookings b
+        JOIN trips t ON b.trip_id = t.id
+        JOIN routes r ON t.route_id = r.id
+        JOIN bus_companies bc ON t.bus_company_id = bc.id
+        JOIN buses bus ON t.bus_id = bus.id
+        WHERE b.id = ? AND b.user_id = ?`,
+        [id, user_id]
+      );
+
+      if (bookings.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found'
+        });
+      }
+
+      const booking = bookings[0];
+
+      res.json({
+        success: true,
+        data: {
+          id: booking.id,
+          booking_code: booking.booking_code,
+          trip_id: booking.trip_id,
+          seat_numbers: JSON.parse(booking.seat_numbers || '[]'),
+          passenger_info: JSON.parse(booking.passenger_info || '{}'),
+          total_amount: booking.total_amount,
+          booking_status: booking.booking_status,
+          payment_status: booking.payment_status,
+          payment_method: booking.payment_method,
+          departure_time: booking.departure_time,
+          arrival_time: booking.arrival_time,
+          base_price: booking.base_price,
+          departure_city: booking.departure_city,
+          departure_station: booking.departure_station,
+          arrival_city: booking.arrival_city,
+          arrival_station: booking.arrival_station,
+          company_name: booking.company_name,
+          bus_type: booking.bus_type,
+          qr_code_url: booking.qr_code_url,
+          created_at: booking.created_at
+        }
+      });
+    } catch (error) {
+      console.error('Get booking detail error:', error);
       res.status(500).json({
         success: false,
         message: 'Internal server error'

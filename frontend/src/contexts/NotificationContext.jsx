@@ -1,128 +1,70 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState } from 'react';
+import '../styles/notification.css';
 
-// THÊM EXPORT CHO CONTEXT
-export const NotificationContext = createContext()
+const NotificationContext = createContext();
 
 export const useNotification = () => {
-  const context = useContext(NotificationContext)
+  const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotification must be used within a NotificationProvider')
+    throw new Error('useNotification must be used within NotificationProvider');
   }
-  return context
-}
+  return context;
+};
 
 export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState([])
+  const [notifications, setNotifications] = useState([]);
 
-  const addNotification = (message, type = 'info', options = {}) => {
-    const {
-      title = '',
-      duration = 5000,
-      autoClose = true,
-      actions = [],
-      persistent = false
-    } = options
+  const showNotification = (message, type = 'success', duration = 3000) => {
+    const id = Date.now();
+    const newNotification = { id, message, type };
+    
+    setNotifications(prev => [...prev, newNotification]);
 
-    const id = Date.now() + Math.random()
-    const notification = { 
-      id, 
-      message, 
-      type, 
-      title,
-      duration,
-      autoClose,
-      actions,
-      persistent,
-      timestamp: new Date().toISOString(),
-      read: false
-    }
-    
-    setNotifications(prev => [notification, ...prev])
-    
-    if (autoClose && !persistent) {
+    if (duration > 0) {
       setTimeout(() => {
-        removeNotification(id)
-      }, duration)
+        removeNotification(id);
+      }, duration);
     }
-
-    return id
-  }
+  };
 
   const removeNotification = (id) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id))
-  }
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  };
 
-  const clearAllNotifications = () => {
-    setNotifications([])
-  }
-
-  const markAsRead = (id) => {
-    setNotifications(prev =>
-      prev.map(notification =>
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    )
-  }
-
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notification => ({ ...notification, read: true }))
-    )
-  }
-
-  // Convenience methods for different notification types
-  const showNotification = (message, type = 'info', options = {}) => {
-    return addNotification(message, type, options)
-  }
-
-  const showSuccess = (message, options = {}) => {
-    return addNotification(message, 'success', options)
-  }
-
-  const showError = (message, options = {}) => {
-    return addNotification(message, 'error', options)
-  }
-
-  const showWarning = (message, options = {}) => {
-    return addNotification(message, 'warning', options)
-  }
-
-  const showInfo = (message, options = {}) => {
-    return addNotification(message, 'info', options)
-  }
-
-  const getUnreadCount = () => {
-    return notifications.filter(n => !n.read).length
-  }
-
-  const value = {
-    // State
-    notifications,
-    
-    // Core methods
-    addNotification,
-    removeNotification,
-    clearAllNotifications,
-    markAsRead,
-    markAllAsRead,
-    
-    // Convenience methods
-    showNotification,
-    showSuccess,
-    showError,
-    showWarning,
-    showInfo,
-    
-    // Utility functions
-    unreadCount: getUnreadCount()
-  }
+  const success = (message, duration) => showNotification(message, 'success', duration);
+  const error = (message, duration) => showNotification(message, 'error', duration);
+  const warning = (message, duration) => showNotification(message, 'warning', duration);
+  const info = (message, duration) => showNotification(message, 'info', duration);
 
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider value={{ showNotification, success, error, warning, info }}>
       {children}
+      <div className="notification-container">
+        {notifications.map(notification => (
+          <div 
+            key={notification.id} 
+            className={`notification notification-${notification.type}`}
+          >
+            <div className="notification-content">
+              <span className="notification-icon">
+                {notification.type === 'success' && '✓'}
+                {notification.type === 'error' && '✕'}
+                {notification.type === 'warning' && '⚠'}
+                {notification.type === 'info' && 'ℹ'}
+              </span>
+              <span className="notification-message">{notification.message}</span>
+            </div>
+            <button 
+              className="notification-close"
+              onClick={() => removeNotification(notification.id)}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
     </NotificationContext.Provider>
-  )
-}
+  );
+};
 
-// THÊM EXPORT DEFAULT NẾU CẦN
-export default NotificationContext
+export default NotificationContext;
