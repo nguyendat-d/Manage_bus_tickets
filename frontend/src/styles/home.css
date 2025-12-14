@@ -188,10 +188,23 @@
 }
 
 .hero-description {
-  font-size: 18px;
+  font-size: 17px;
   opacity: 0.9;
   margin-bottom: 32px;
-  line-height: 1.6;
+  line-height: 1.8;
+}
+
+.hero-description strong {
+  color: #667eea;
+  font-weight: 700;
+}
+
+.hero-description em {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  color: #64748b;
+  font-style: normal;
 }
 
 .hero-buttons {
@@ -269,7 +282,16 @@
   font-size: 36px;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 48px;
+  margin-bottom: 16px;
+}
+
+.section-subtitle {
+  text-align: center;
+  font-size: 16px;
+  color: #64748b;
+  max-width: 700px;
+  margin: 0 auto 48px;
+  line-height: 1.6;
 }
 
 .features-grid {
@@ -444,9 +466,15 @@
 }
 
 .company-benefits li {
-  font-size: 16px;
-  margin-bottom: 12px;
+  font-size: 15px;
+  margin-bottom: 16px;
   opacity: 0.9;
+  line-height: 1.6;
+}
+
+.company-benefits li strong {
+  color: #667eea;
+  font-weight: 600;
 }
 
 .company-illustration {

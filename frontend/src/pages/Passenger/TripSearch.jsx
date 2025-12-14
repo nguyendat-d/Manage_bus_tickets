@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import authService from '../../services/authService';
+import { handleError } from '../../utils/messageHandler';
 import '../../styles/trip-search.css';
 
 const TripSearch = () => {
@@ -28,27 +29,21 @@ const TripSearch = () => {
 
   const fetchRoutes = async () => {
     try {
-      console.log('Fetching routes from:', api.defaults.baseURL + '/trips/routes');
       const response = await api.get('/trips/routes');
-      console.log('Routes response:', response.data);
       setRoutes(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching routes:', error);
-      console.error('Error details:', error.response || error.message);
-      showError('Không thể tải danh sách tuyến đường. Vui lòng kiểm tra kết nối!');
+      const errorMsg = error.friendlyMessage || handleError(error);
+      showError(errorMsg);
     }
   };
 
   const fetchFeaturedTrips = async () => {
     try {
-      console.log('Fetching featured trips from:', api.defaults.baseURL + '/trips/featured');
       const response = await api.get('/trips/featured');
-      console.log('Featured trips response:', response.data);
       setFeaturedTrips(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching featured trips:', error);
-      console.error('Error details:', error.response || error.message);
-      showError('Không thể tải chuyến xe nổi bật. Vui lòng thử lại!');
+      const errorMsg = error.friendlyMessage || handleError(error);
+      showError(errorMsg);
     }
   };
 
@@ -71,8 +66,6 @@ const TripSearch = () => {
         }
       });
       
-      console.log('Search response:', response.data);
-      
       // Backend returns { success, data: { trips, pagination } }
       const trips = response.data.data?.trips || [];
       setTrips(trips);
@@ -83,8 +76,8 @@ const TripSearch = () => {
         success(`Tìm thấy ${trips.length} chuyến xe!`);
       }
     } catch (error) {
-      console.error('Error searching trips:', error);
-      showError(error.response?.data?.message || 'Lỗi khi tìm kiếm chuyến xe. Vui lòng thử lại!');
+      const errorMsg = error.friendlyMessage || handleError(error);
+      showError(errorMsg);
       setTrips([]);
     } finally {
       setLoading(false);
@@ -157,9 +150,8 @@ const TripSearch = () => {
         } 
       });
     } catch (error) {
-      console.error('Error creating booking:', error);
-      console.error('Error details:', error.response?.data);
-      showError(error.response?.data?.message || 'Có lỗi xảy ra khi đặt vé');
+      const errorMsg = error.friendlyMessage || handleError(error);
+      showError(errorMsg);
       setLoading(false);
     }
   };

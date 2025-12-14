@@ -1,22 +1,31 @@
 // Authentication Service
 import api from './api';
+import { handleError, handleSuccess } from '../utils/messageHandler';
 
 const authService = {
   // Login
   login: async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
-    const result = response.data;
-    if (result.success && result.data.token) {
-      localStorage.setItem('token', result.data.token);
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const result = response.data;
+      if (result.success && result.data.token) {
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('user', JSON.stringify(result.data.user));
+      }
+      return result;
+    } catch (error) {
+      throw new Error(error.friendlyMessage || handleError(error));
     }
-    return result;
   },
 
   // Register
   register: async (userData) => {
-    const response = await api.post('/auth/register', userData);
-    return response.data;
+    try {
+      const response = await api.post('/auth/register', userData);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.friendlyMessage || handleError(error));
+    }
   },
 
   // Logout

@@ -70,7 +70,7 @@ const LoginForm = () => {
         showError(response.message || 'Đăng nhập thất bại');
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại!';
+      const errorMsg = err.message || 'Có lỗi xảy ra. Vui lòng thử lại!';
       setError(errorMsg);
       showError(errorMsg);
     } finally {
@@ -81,6 +81,10 @@ const LoginForm = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div className="auth-logo" onClick={() => navigate('/')}>
+          <span className="logo-icon">🎫</span>
+          <span className="logo-text">VeXeOnline</span>
+        </div>
         <div className="auth-header">
           <h2>Đăng Nhập</h2>
           <p>Chào mừng bạn quay trở lại!</p>

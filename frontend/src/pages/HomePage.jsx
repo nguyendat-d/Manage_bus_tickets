@@ -46,7 +46,9 @@ const HomePage = () => {
             <span className="logo-text">VeXeOnline</span>
           </div>
           <nav className="main-nav">
-            <Link to="/search" className="nav-link">🔍 Tìm chuyến xe</Link>
+            {(!user || user.role !== 'bus_company') && (
+              <Link to="/search" className="nav-link">🔍 Tìm chuyến xe</Link>
+            )}
             <Link to="/about" className="nav-link">ℹ️ Giới thiệu</Link>
             <Link to="/contact" className="nav-link">📞 Liên hệ</Link>
             
@@ -92,16 +94,27 @@ const HomePage = () => {
               <span className="highlight">Nhanh chóng & Tiện lợi</span>
             </h1>
             <p className="hero-description">
-              Hệ thống đặt vé xe trực tuyến hàng đầu Việt Nam. 
-              Kết nối hành khách với hơn 100+ nhà xe uy tín trên toàn quốc.
+              <strong>VeXeOnline</strong> - Nền tảng đặt vé xe khách trực tuyến hàng đầu Việt Nam.<br />
+              Chúng tôi kết nối hành khách với hơn 100+ nhà xe uy tín, cung cấp dịch vụ đặt vé 
+              nhanh chóng, an toàn và tiện lợi 24/7. <br />
+              <em>Hơn 1 triệu lượt đặt vé thành công • Thanh toán bảo mật • Hỗ trợ tận tâm</em>
             </p>
             <div className="hero-buttons">
-              <Link to="/search" className="btn btn-primary btn-large">
-                🔍 Tìm chuyến xe ngay
-              </Link>
-              <Link to="/register" className="btn btn-outline btn-large">
-                🚌 Đăng ký nhà xe
-              </Link>
+              {(!user || user.role !== 'bus_company') && (
+                <Link to="/search" className="btn btn-primary btn-large">
+                  🔍 Tìm chuyến xe ngay
+                </Link>
+              )}
+              {!user && (
+                <Link to="/register" className="btn btn-outline btn-large">
+                  🚌 Đăng ký nhà xe
+                </Link>
+              )}
+              {user && user.role === 'bus_company' && (
+                <Link to="/bus-company/dashboard" className="btn btn-primary btn-large">
+                  📊 Quản lý chuyến xe
+                </Link>
+              )}
             </div>
           </div>
           <div className="hero-image">
@@ -113,37 +126,40 @@ const HomePage = () => {
       {/* Features Section */}
       <section className="features">
         <div className="container">
-          <h2 className="section-title">Tại sao chọn chúng tôi?</h2>
+          <h2 className="section-title">Tại sao chọn VeXeOnline?</h2>
+          <p className="section-subtitle">
+            Chúng tôi cam kết mang đến trải nghiệm đặt vé tốt nhất với công nghệ hiện đại và dịch vụ chuyên nghiệp
+          </p>
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">⚡</div>
               <h3>Đặt vé nhanh chóng</h3>
-              <p>Chỉ với 3 bước đơn giản: Tìm kiếm → Chọn chỗ → Thanh toán</p>
+              <p>Chỉ với 3 bước đơn giản và hoàn tất trong vòng 2 phút: Tìm kiếm → Chọn chỗ → Thanh toán. Giao diện thân thiện, dễ sử dụng.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">💰</div>
               <h3>Giá cả minh bạch</h3>
-              <p>Không phụ thu, không phí ẩn. Giá vé rõ ràng, thanh toán an toàn</p>
+              <p>Giá vé hiển thị rõ ràng, không phụ thu, không phí ẩn. So sánh giá từ nhiều nhà xe để chọn ưu đãi tốt nhất.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">🎫</div>
-              <h3>Vé điện tử</h3>
-              <p>Vé có mã QR, dễ dàng check-in tại bến xe mà không cần in</p>
+              <h3>Vé điện tử thông minh</h3>
+              <p>Vé có mã QR độc quyền, gửi ngay qua email và SMS. Check-in nhanh chóng tại bến xe mà không cần in vé giấy.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">🔒</div>
               <h3>Bảo mật tuyệt đối</h3>
-              <p>Thông tin cá nhân và thanh toán được mã hóa an toàn</p>
+              <p>Thông tin cá nhân và thanh toán được mã hóa SSL 256-bit. Tích hợp cổng thanh toán VNPay - đạt chuẩn bảo mật quốc tế PCI DSS.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">📱</div>
-              <h3>Hỗ trợ 24/7</h3>
-              <p>Đội ngũ chăm sóc khách hàng luôn sẵn sàng hỗ trợ bạn</p>
+              <h3>Hỗ trợ tận tâm 24/7</h3>
+              <p>Đội ngũ chăm sóc khách hàng chuyên nghiệp, nhiệt tình. Hỗ trợ qua Hotline, Email, Chat trực tuyến mọi lúc mọi nơi.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">🚌</div>
-              <h3>Nhiều nhà xe</h3>
-              <p>Hợp tác với hơn 100+ nhà xe uy tín khắp cả nước</p>
+              <h3>Mạng lưới rộng khắp</h3>
+              <p>Hợp tác với 100+ nhà xe uy tín toàn quốc. Hơn 500 tuyến đường, 10,000+ chuyến xe mỗi ngày.</p>
             </div>
           </div>
         </div>
@@ -185,7 +201,8 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Popular Routes */}
+      {/* Popular Routes - Ẩn cho nhà xe */}
+      {(!user || user.role !== 'bus_company') && (
       <section className="popular-routes">
         <div className="container">
           <h2 className="section-title">Tuyến đường phổ biến</h2>
@@ -217,22 +234,24 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* For Bus Companies */}
       <section className="for-companies">
         <div className="container">
           <div className="company-content">
             <div className="company-text">
-              <h2>Dành cho nhà xe</h2>
+              <h2>Đối tác nhà xe</h2>
               <p>
-                Tham gia nền tảng của chúng tôi để mở rộng kinh doanh và 
-                tiếp cận hàng triệu khách hàng tiềm năng.
+                Tham gia VeXeOnline - nền tảng đặt vé trực tuyến hàng đầu với hơn 1 triệu khách hàng. 
+                Chúng tôi giúp nhà xe số hóa vận hành, tối ưu doanh thu và mở rộng thị trường hiệu quả.
               </p>
               <ul className="company-benefits">
-                <li>✅ Quản lý chuyến xe dễ dàng</li>
-                <li>✅ Hệ thống đặt vé tự động</li>
-                <li>✅ Báo cáo doanh thu chi tiết</li>
-                <li>✅ Hỗ trợ marketing miễn phí</li>
+                <li>✅ <strong>Quản lý thông minh:</strong> Dashboard tổng quan, quản lý chuyến xe, xe, tài xế một cách chuyên nghiệp</li>
+                <li>✅ <strong>Tự động hóa:</strong> Hệ thống đặt vé, thanh toán và gửi vé điện tử tự động 24/7</li>
+                <li>✅ <strong>Phân tích dữ liệu:</strong> Báo cáo doanh thu chi tiết, thống kê khách hàng theo thời gian thực</li>
+                <li>✅ <strong>Marketing miễn phí:</strong> Quảng bá thương hiệu trên nền tảng với hàng triệu lượt truy cập</li>
+                <li>✅ <strong>Chi phí hợp lý:</strong> Chỉ thu phí khi có giao dịch thành công, không phí cố định</li>
               </ul>
               <Link to="/register?type=company" className="btn btn-primary btn-large">
                 Đăng ký nhà xe ngay

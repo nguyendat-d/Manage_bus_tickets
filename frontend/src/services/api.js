@@ -1,5 +1,6 @@
 // API Service Configuration
 import axios from 'axios';
+import { handleError } from '../utils/messageHandler';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -36,6 +37,11 @@ api.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    
+    // Chuyển đổi error message thành thông báo thân thiện
+    const friendlyMessage = handleError(error);
+    error.friendlyMessage = friendlyMessage;
+    
     return Promise.reject(error);
   }
 );

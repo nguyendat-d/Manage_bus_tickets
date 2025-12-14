@@ -115,7 +115,7 @@ const RegisterForm = () => {
         showError(errorMsg);
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại!';
+      const errorMsg = err.message || 'Có lỗi xảy ra. Vui lòng thử lại!';
       setError(errorMsg);
       showError(errorMsg);
     } finally {
@@ -126,6 +126,10 @@ const RegisterForm = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div className="auth-logo" onClick={() => navigate('/')}>
+          <span className="logo-icon">🎫</span>
+          <span className="logo-text">VeXeOnline</span>
+        </div>
         <div className="auth-header">
           <h2>Đăng Ký</h2>
           <p>Tạo tài khoản mới để bắt đầu</p>
