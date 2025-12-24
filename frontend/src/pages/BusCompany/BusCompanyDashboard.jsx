@@ -72,7 +72,12 @@ const BusCompanyDashboard = () => {
       const tripsData = tripsRes.data.data?.trips || tripsRes.data.data || [];
       const busesData = busesRes.data.data?.buses || busesRes.data.data || [];
       const routesData = routesRes.data.data || [];
-      const statsData = statsRes.data.data || stats;
+      const statsData = statsRes.data.data || {
+        totalTrips: 0,
+        totalBuses: 0,
+        totalBookings: 0,
+        revenue: 0
+      };
 
       setTrips(tripsData);
       setBuses(busesData);
@@ -82,7 +87,8 @@ const BusCompanyDashboard = () => {
       console.log('📊 State updated:', {
         trips: tripsData.length,
         buses: busesData.length,
-        routes: routesData.length
+        routes: routesData.length,
+        stats: statsData
       });
 
       setLoading(false);
@@ -284,28 +290,28 @@ const BusCompanyDashboard = () => {
         <div className="stat-card">
           <div className="stat-icon">🚌</div>
           <div className="stat-info">
-            <h3>{stats.totalTrips}</h3>
+            <h3>{stats.totalTrips || 0}</h3>
             <p>Total Trips</p>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon">🚍</div>
           <div className="stat-info">
-            <h3>{stats.totalBuses}</h3>
+            <h3>{stats.totalBuses || 0}</h3>
             <p>Total Buses</p>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon">🎫</div>
           <div className="stat-info">
-            <h3>{stats.totalBookings}</h3>
+            <h3>{stats.totalBookings || 0}</h3>
             <p>Total Bookings</p>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon">💰</div>
           <div className="stat-info">
-            <h3>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.revenue)}</h3>
+            <h3>{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stats.revenue || 0)}</h3>
             <p>Revenue</p>
           </div>
         </div>

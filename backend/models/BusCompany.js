@@ -101,6 +101,30 @@ class BusCompany {
   }
 
   static async getStats(companyId) {
+    // Get total trips
+    const [tripCount] = await pool.execute(
+      `SELECT COUNT(*) as total FROM trips WHERE bus_company_id = ?`,
+      [companyId]
+    );
+
+    // Get total buses
+    const [busCount] = await pool.execute(
+      `SELECT COUNT(*) as total FROM buses WHERE bus_company_id = ?`,
+      [companyId]
+    );
+
+    // Get total bookings and revenue
+    const [bookingStats] = await pool.execute(
+      `SELECT 
+        COUNT(DISTINCT b.id) as total_bookings,
+        SUM(CASE WHEN b.payment_status = 'paid' THEN b.total_amount ELSE 0 END) as total_revenue
+       FROM bookings b
+       JOIN trips t ON b.trip_id = t.id
+       WHERE t.bus_company_id = ?`,
+      [companyId]
+    );
+
+    // Get revenue by month for chart
     const [revenueStats] = await pool.execute(
       `SELECT 
         COUNT(*) as total_bookings,
@@ -117,6 +141,7 @@ class BusCompany {
       [companyId]
     );
 
+    // Get popular routes
     const [popularRoutes] = await pool.execute(
       `SELECT 
         r.departure_city, r.arrival_city,
@@ -132,6 +157,7 @@ class BusCompany {
       [companyId]
     );
 
+    // Get bus performance stats
     const [busStats] = await pool.execute(
       `SELECT 
         b.license_plate, b.bus_type,
@@ -147,6 +173,10 @@ class BusCompany {
     );
 
     return {
+      totalTrips: tripCount[0].total || 0,
+      totalBuses: busCount[0].total || 0,
+      totalBookings: bookingStats[0].total_bookings || 0,
+      revenue: bookingStats[0].total_revenue || 0,
       revenueStats,
       popularRoutes,
       busStats
